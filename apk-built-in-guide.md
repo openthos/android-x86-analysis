@@ -1,12 +1,45 @@
 # 1.APK列表
-和dand中的requirement文件中要求的移植
+和dand中的requirement文件中要求的一致，在此贴出：
+    
+- 办公生活类
+     - ms office
+     - wps
+     - skype
+     - QQ
+     - 微信
+     - ES文件管理器
+     - 今日头条
+     - 豌豆荚
+     - 优酷视频
+     - QQ音乐
+     - 搜狗输入法
+     - QQ浏览器
+     - chrome浏览器
+     - 美图秀秀
+     - 百度云
+     - seafile
+     - remix上能可靠运行的软件
+    
+- 游戏类
+     
+     - 开心消消乐
+
+     - 植物大战僵尸
+     - 地铁跑酷
+     - 水果忍者
+     
+- benchmark类
+     - 安兔兔
+     
+- 定制类
+     - recovery windows
 
 #2.移植步骤
 
 ##2.1获取system镜像中的文件
 system镜像需要通过这样一个步骤链来获取
     
-    mount android-x86.img->get system.sfs->mount system.sfs->get system.img->mount system.img->get files
+    mount android-x86.img -> get system.sfs->mount system.sfs -> get system.img -> mount system.img -> get files
     
 下面针对每一个步骤进行详解
   
@@ -43,7 +76,7 @@ mount system.img $ get filse
 
 dhcpcd-run-hooks和网络访问相关，另外一个则是开启对arm应用支持的执行文件。修改完毕后则可以进行打包，打包语句如下
 
-    sudo make_ext4fs -l 4G system.img SYSTEM_FILES/   #-l后的大小可以自由输入，保证不小于文件内容大小即可，打包后的img文件大小为真实大小而不是-l中输入的大小
+    sudo make_ext4fs -l 4G system.img SYSTEM_FILES/   #-l后的大小可以自由输入，保证不小于文件内容大小即可，打包后的img文件占用空间为真实大小而不是-l中输入的极限容量
     sudo mksquashfs system.img system.sfs -comp xz    #压缩方式可以自行选择，xz为最高压缩比，建议选择
     
 之后将sfs文件替换原本的sfs文件即可完成定制。
