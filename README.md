@@ -1,4 +1,5 @@
-# two-os-analysis
+# android-x86-analysis
+
 本人项目主页，其中放置课题相关内容和项目相关内容，欢迎前来获取需要的资料以及进行交流讨论。可以通过以下邮箱与我联系
 stormdragon@vip.qq.com
 ladehunter@gmail.com
