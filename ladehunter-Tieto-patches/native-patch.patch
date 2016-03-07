@@ -1,0 +1,220 @@
+From fa7cabf92a6b0b27541cf8d3e6a72712a56a05c5 Mon Sep 17 00:00:00 2001
+From: ladehunter <ladehunter@gmail.com>
+Date: Wed, 2 Mar 2016 07:22:41 +0000
+Subject: [PATCH] apply Tieto's patches
+
+---
+ include/input/InputTransport.h    | 11 ++++++++
+ libs/input/InputTransport.cpp     | 16 +++++++++++-
+ services/surfaceflinger/Layer.cpp | 55 ++++++++++++++++++++++++++++++++++++---
+ services/surfaceflinger/Layer.h   |  9 +++++++
+ 4 files changed, 86 insertions(+), 5 deletions(-)
+
+diff --git a/include/input/InputTransport.h b/include/input/InputTransport.h
+index 609b679..5b6c916 100644
+--- a/include/input/InputTransport.h
++++ b/include/input/InputTransport.h
+@@ -1,5 +1,6 @@
+ /*
+  * Copyright (C) 2010 The Android Open Source Project
++ * Copyright (C) 2014 Tieto Poland Sp. z o.o.
+  *
+  * Licensed under the Apache License, Version 2.0 (the "License");
+  * you may not use this file except in compliance with the License.
+@@ -171,7 +172,17 @@ public:
+     /* Returns a new object that has a duplicate of this channel's fd. */
+     sp<InputChannel> dup() const;
+ 
++    /**
++     * Date: Apr 3, 2014
++     * Copyright (C) 2014 Tieto Poland Sp. z o.o.
++     *
++     * Setters and getters. Used only for monitors
++     */
++    void setDisplayId(int displayId);
++    int getDisplayId();
++
+ private:
++    int mDisplayId;
+     String8 mName;
+     int mFd;
+ };
+diff --git a/libs/input/InputTransport.cpp b/libs/input/InputTransport.cpp
+index 09b2e7c..378f0df 100644
+--- a/libs/input/InputTransport.cpp
++++ b/libs/input/InputTransport.cpp
+@@ -1,5 +1,6 @@
+ //
+ // Copyright 2010 The Android Open Source Project
++// Copyright 2014 Tieto Poland Sp. z o.o.
+ //
+ // Provides a shared memory transport for input events.
+ //
+@@ -96,7 +97,7 @@ size_t InputMessage::size() const {
+ // --- InputChannel ---
+ 
+ InputChannel::InputChannel(const String8& name, int fd) :
+-        mName(name), mFd(fd) {
++        mDisplayId(-1), mName(name), mFd(fd) {
+ #if DEBUG_CHANNEL_LIFECYCLE
+     ALOGD("Input channel constructed: name='%s', fd=%d",
+             mName.string(), fd);
+@@ -225,6 +226,19 @@ sp<InputChannel> InputChannel::dup() const {
+     return fd >= 0 ? new InputChannel(getName(), fd) : NULL;
+ }
+ 
++/**
++ * Date: Apr 3, 2014
++ * Copyright (C) 2014 Tieto Poland Sp. z o.o.
++ *
++ * Use it wisely, because there is no error checking.
++ */
++void InputChannel::setDisplayId(int displayId) {
++    mDisplayId = displayId;
++}
++
++int InputChannel::getDisplayId() {
++    return mDisplayId;
++}
+ 
+ // --- InputPublisher ---
+ 
+diff --git a/services/surfaceflinger/Layer.cpp b/services/surfaceflinger/Layer.cpp
+index 61af51f..d60ca3d 100644
+--- a/services/surfaceflinger/Layer.cpp
++++ b/services/surfaceflinger/Layer.cpp
+@@ -1,5 +1,6 @@
+ /*
+  * Copyright (C) 2007 The Android Open Source Project
++ * Copyright (C) 2014 Tieto Poland Sp. z o.o.
+  *
+  * Licensed under the Apache License, Version 2.0 (the "License");
+  * you may not use this file except in compliance with the License.
+@@ -101,7 +102,19 @@ Layer::Layer(SurfaceFlinger* flinger, const sp<Client>& client,
+     mCurrentState.layerStack = 0;
+     mCurrentState.flags = layerFlags;
+     mCurrentState.sequence = 0;
++    /**
++     * Date: Mar 6, 2014
++     * Copyright (C) 2014 Tieto Poland Sp. z o.o.
++     */
++    mCurrentState.requestedTransform = mCurrentState.transform;
+     mCurrentState.transform.set(0, 0);
++    /**
++     * Date: Mar 5, 2014
++     * Copyright (C) 2014 Tieto Poland Sp. z o.o.
++     *
++     * initialize to the same value as transform
++     */
++    mCurrentState.requestedTransform = mCurrentState.transform;
+     mCurrentState.requested = mCurrentState.active;
+ 
+     // drawing state & current state are identical
+@@ -786,6 +799,13 @@ uint32_t Layer::doTransaction(uint32_t flags) {
+     } else {
+         Layer::State& editCurrentState(getCurrentState());
+         editCurrentState.active = c.requested;
++        /**
++         * Date: Mar 6, 2014
++         * Copyright (C) 2014 Tieto Poland Sp. z o.o.
++         *
++         * No geometry changed than commit
++         */
++        editCurrentState.transform = c.requestedTransform;
+     }
+ 
+     if (s.active != c.active) {
+@@ -822,10 +842,17 @@ uint32_t Layer::setTransactionFlags(uint32_t flags) {
+ }
+ 
+ bool Layer::setPosition(float x, float y) {
+-    if (mCurrentState.transform.tx() == x && mCurrentState.transform.ty() == y)
++    /**
++     * Date: Mar 6, 2014
++     * Copyright (C) 2014 Tieto Poland Sp. z o.o.
++     *
++     * Delay setPosition for resizing window from left border.
++     */
++    if (mCurrentState.requestedTransform.tx() == x &&
++            mCurrentState.requestedTransform.ty() == y)
+         return false;
+     mCurrentState.sequence++;
+-    mCurrentState.transform.set(x, y);
++    mCurrentState.requestedTransform.set(x, y);
+     setTransactionFlags(eTransactionNeeded);
+     return true;
+ }
+@@ -855,7 +882,11 @@ bool Layer::setAlpha(uint8_t alpha) {
+ }
+ bool Layer::setMatrix(const layer_state_t::matrix22_t& matrix) {
+     mCurrentState.sequence++;
+-    mCurrentState.transform.set(
++    /**
++     * Date: Mar 6, 2014
++     * Copyright (C) 2014 Tieto Poland Sp. z o.o.
++     */
++    mCurrentState.requestedTransform.set(
+             matrix.dsdx, matrix.dsdy, matrix.dtdx, matrix.dtdy);
+     setTransactionFlags(eTransactionNeeded);
+     return true;
+@@ -983,7 +1014,15 @@ Region Layer::latchBuffer(bool& recomputeVisibleRegions)
+                 }
+ 
+                 bool isFixedSize = item.mScalingMode != NATIVE_WINDOW_SCALING_MODE_FREEZE;
+-                if (front.active != front.requested) {
++                /**
++                 * Date: Mar 6, 2014
++                 * Copyright (C) 2014 Tieto Poland Sp. z o.o.
++                 *
++                 * If there was a movement than update current state
++                 */
++                if ((front.active != front.requested)
++                        || (front.transform.tx() != front.requestedTransform.tx())
++                        || (front.transform.ty() != front.requestedTransform.ty())) {
+ 
+                     if (isFixedSize ||
+                             (bufWidth == front.requested.w &&
+@@ -1001,6 +1040,14 @@ Region Layer::latchBuffer(bool& recomputeVisibleRegions)
+                         // NOTE: We don't need to hold the transaction lock here
+                         // because State::active is only accessed from this thread.
+                         current.active = front.active;
++                        /**
++                         * Date: Mar 6, 2014
++                         * Copyright (C) 2014 Tieto Poland Sp. z o.o.
++                         *
++                         * Update surface position
++                         */
++                        front.transform = front.requestedTransform;
++                        current.transform = front.requestedTransform;
+ 
+                         // recompute visible region
+                         recomputeVisibleRegions = true;
+diff --git a/services/surfaceflinger/Layer.h b/services/surfaceflinger/Layer.h
+index ef4a7e9..a4b909a 100644
+--- a/services/surfaceflinger/Layer.h
++++ b/services/surfaceflinger/Layer.h
+@@ -1,5 +1,6 @@
+ /*
+  * Copyright (C) 2007 The Android Open Source Project
++ * Copyright (C) 2014 Tieto Poland Sp. z o.o.
+  *
+  * Licensed under the Apache License, Version 2.0 (the "License");
+  * you may not use this file except in compliance with the License.
+@@ -103,6 +104,14 @@ public:
+         uint8_t flags;
+         uint8_t reserved[2];
+         int32_t sequence; // changes when visible regions can change
++        /**
++         * Date: Mar 5, 2014
++         * Copyright (C) 2014 Tieto Poland Sp. z o.o.
++         *
++         * This is used for synchronize setSize and setPosition. Needed for
++         * resizing window from right side.
++         */
++        Transform requestedTransform;
+         Transform transform;
+         // the transparentRegion hint is a bit special, it's latched only
+         // when we receive a buffer -- this is because it's "content"
+-- 
+1.9.1
+
