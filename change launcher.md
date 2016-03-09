@@ -20,6 +20,39 @@
       
   即可让系统在开机时直接运行Desktop。
   
+####环境准备
+
+首先请编译整合了tieto patches的Kitkat-x86。
+
+编译完毕后在源码目录执行以下代码
+  
+      mmm frameworks/base/libs/multiwindow/
+  
+执行完毕后保留以下三个文件备用
+
+      out/target/product/x86/system/framework/com.tieto.extension.multiwindow.jar
+      out/target/product/x86/system/etc/permissions/com.tieto.extension.multiwindow.xml
+      out/target/common/obj/JAVA_LIBRARIES/com.tieto.extension.multiwindow_intermediates/classes.jar
+      
+      
+desktop_for_android的获取及通过Android Studio编译：
+
+1. 从[项目主页](https://github.com/tieto/desktop_for_android)中获取源码
+2. 添加工程到Android studio，同意使用gradle但不使用本地gson库替换源码中的gson库。
+3. 将上一步获取的classes.jar放到desktop_for_android/libs/目录下，并在Android studio中将该文件添加为lib文件
+4. 按照如下方式修改desktop_for_android/app/build.gradle文件
+        
+        dependencies{
+          compile files('./libs/gson-2.2.4.jar')
+          -compile files('./libs/classes.jar')
+          +provided files('./libs/classes.jar')
+        }
+5. 向Android system中添加以下文件
+      
+        cp com.tieto.extension.multiwindow.jar system/framework/
+        cp com.tieto.extension.multiwindow.xml system/etc/permissions/
+
+之后即可运行该Launcher。
 
 ####后续问题
 
