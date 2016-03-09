@@ -4,7 +4,7 @@
 
 1. 去除原Launcher的Launcher属性。
   
-  kitkat-x86使用的Launcher是Trebuchet，发现这点首先是通过查看编译后的system/app/和system/priv-app中均没有Launcher2.apk和Launcher3.apk。于是认为可能是某些app在编译时覆盖了Launcher2。经过在packages/app中使用grep -r "LOCAL_OVERRIDES_PACKAGES := Launcher2"找到了这个应用。之后编辑 Trebuchet的AndroidManifest.xml文件，去掉intent-filter中的以下三行
+  kitkat-x86使用的Launcher是Trebuchet，发现这点首先是通过查看编译后的system/app/和system/priv-app中均没有Launcher2.apk和Launcher3.apk。于是认为可能是某些app在编译时覆盖了Launcher2。经过在packages/apps中使用grep -r "LOCAL_OVERRIDES_PACKAGES := Launcher2"找到了这个应用。之后编辑 packages/apps/Trebuchet/AndroidManifest.xml文件，去掉intent-filter中的以下三行
       
       <categoryandroid:name="android.intent.category.HOME"/>  
       <categoryandroid:name="android.intent.category.DEFAULT"/>  
@@ -14,7 +14,7 @@
   
 2. 给Desktop添加Launcher属性
 
-  同理，修改Desktop的AndroidManifest.xml文件，在initent-filter中添加上面的三行，并去掉
+  同理，修改desktop_for_android/AndroidManifest.xml文件，在initent-filter中添加上面的三行，并去掉
       
       <categoryandroid:name="android.intent.category.LAUNCHER"/>
       
