@@ -1,0 +1,213 @@
+From a8c370d39063c9b88585ad9ebef5e56e7a5262d2 Mon Sep 17 00:00:00 2001
+From: ladehunter <ladehunter@gmail.com>
+Date: Fri, 25 Mar 2016 20:28:54 +0800
+Subject: [PATCH] ladehunter edge edit v1.0
+
+---
+ core/res/res/drawable/mw_outer_border.xml          |  2 +-
+ core/res/res/layout/mw_decor.xml                   |  2 +-
+ core/res/res/values/colors.xml                     |  2 +-
+ core/res/res/values/mw_values.xml                  |  4 +-
+ .../android/internal/policy/impl/PhoneWindow.java  | 72 +++++++++++++++++++---
+ 5 files changed, 67 insertions(+), 15 deletions(-)
+
+diff --git a/core/res/res/drawable/mw_outer_border.xml b/core/res/res/drawable/mw_outer_border.xml
+index 455bad1..1d91ab7 100755
+--- a/core/res/res/drawable/mw_outer_border.xml
++++ b/core/res/res/drawable/mw_outer_border.xml
+@@ -2,4 +2,4 @@
+ <!-- Copyright Tieto 2014 Dariusz Kluska -->
+ <shape xmlns:android="http://schemas.android.com/apk/res/android">
+     <stroke android:width="@dimen/mw_outer_border" android:color="@color/mw_white_border" />
+-</shape>
+\ No newline at end of file
++</shape>
+diff --git a/core/res/res/layout/mw_decor.xml b/core/res/res/layout/mw_decor.xml
+index c356c22..9945abc 100755
+--- a/core/res/res/layout/mw_decor.xml
++++ b/core/res/res/layout/mw_decor.xml
+@@ -82,4 +82,4 @@
+         android:layout_marginTop="@dimen/mw_inner_border"
+         android:layout_marginRight="@dimen/mw_inner_border"
+         android:layout_marginBottom="@dimen/mw_inner_border"/>
+-</RelativeLayout>
+\ No newline at end of file
++</RelativeLayout>
+diff --git a/core/res/res/values/colors.xml b/core/res/res/values/colors.xml
+index 130f863..3425793 100755
+--- a/core/res/res/values/colors.xml
++++ b/core/res/res/values/colors.xml
+@@ -205,7 +205,7 @@
+ 
+     <!-- MW colors -->
+     <color name="mw_blue_decor">#76ceea</color>
+-    <color name="mw_white_border">#FFFFFFFF</color>
++    <color name="mw_white_border">#00000000</color>
+     <color name="mw_transparent_white">#B3FFFFFF</color>
+     
+ </resources>
+diff --git a/core/res/res/values/mw_values.xml b/core/res/res/values/mw_values.xml
+index b9d71eb..11b21be 100755
+--- a/core/res/res/values/mw_values.xml
++++ b/core/res/res/values/mw_values.xml
+@@ -4,7 +4,7 @@ Copyright (C) 2013 Tieto Corporation.
+ Dariusz Kluska
+ -->
+ <resources>
+-    <dimen name="mw_outer_border">2dip</dimen>
++    <dimen name="mw_outer_border">5dip</dimen>
+     <dimen name="mw_inner_border">28dip</dimen>
+     <dimen name="mw_outer_border_wide">30dip</dimen>
+-</resources>
+\ No newline at end of file
++</resources>
+diff --git a/policy/src/com/android/internal/policy/impl/PhoneWindow.java b/policy/src/com/android/internal/policy/impl/PhoneWindow.java
+index d021f93..1cebf3c 100755
+--- a/policy/src/com/android/internal/policy/impl/PhoneWindow.java
++++ b/policy/src/com/android/internal/policy/impl/PhoneWindow.java
+@@ -2841,7 +2841,19 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
+             }
+         }
+     }
+-
++//add by ladehunter
++public int getPos(int x,int y){
++	Rect r =  new Rect(mDecor.getViewRootImpl().mWinFrame);
++	if(y -  r.top <= 5)
++		return 1;
++	if(r.bottom - y <= 5)
++		return 2;
++	if(x - r.left  <= 5)
++		return 3;
++	if(r.right - x <= 5)
++		return 4;
++	return 0;
++}
+ 
+     /**
+      * Date:2013
+@@ -2860,7 +2872,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
+         private ImageButton mMaximizeBtn;
+         private View mParentBtn = null;
+         private Rect mFullScreen;
+-
++	private int pos = 0;
+         public TouchListener(ResizeWindow rw, ImageButton maximizeButton, Rect fullScreen) {
+             mResizeWindow = rw;
+             mMaximizeBtn = maximizeButton;
+@@ -2896,13 +2908,17 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
+         @Override
+         public boolean onTouch(View v, MotionEvent event) {
+             int rawX = (int) event.getRawX();
+-            int rawY = (int) event.getRawY();
+-
++            int rawY = (int) event.getRawY();	
+             if(MotionEvent.ACTION_DOWN == event.getAction()){
+                 mLastX = (int) event.getRawX();
+                 mLastY = (int) event.getRawY();
++		//add by ladehunter
++		pos = getPos(rawX,rawY);
++		Log.e(TAG, "pos = "+pos, null);
+                 mRelayoutSuccess = false;
+                 mFrame = new Rect(mDecor.getViewRootImpl().mWinFrame);
++		Log.e(TAG, "top: "+mFrame.top+" bottom: "+mFrame.bottom+" left: "+mFrame.left+" right: "+mFrame.right, null);
++		Log.e(TAG,"X = "+rawX+" Y = "+rawY,null);
+                 if (mParentBtn != null) {
+                     mParentBtn.setPressed(true);
+                 }
+@@ -2911,7 +2927,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
+                 try{
+                     int dx = rawX - mLastX;
+                     int dy = rawY - mLastY;
+-                    Rect r = mResizeWindow.resize(mFrame, dx, dy);
++                    Rect r = mResizeWindow.resize(mFrame, dx, dy,pos);
+                     if (fitWindowInScreen(r)) {
+                         mNewFrame = r;
+                         mRelayoutSuccess = ActivityManagerNative.getDefault().relayoutWindow(getStackBoxId(), mNewFrame);
+@@ -2946,7 +2962,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
+ 
+     public abstract class ResizeWindow {
+         protected Rect mTmpFrame = new Rect();
+-        public abstract Rect resize(Rect frame, int diffX, int diffY);
++        public abstract Rect resize(Rect frame, int diffX, int diffY,int pos);
+     }
+ 
+     /**
+@@ -3007,10 +3023,45 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
+             Drawable icon = ai.loadIcon(pm);
+             mAppName.setText(pm.getApplicationLabel(ai));
+             mAppIcon.setImageDrawable(icon);
++//add by ladehunter
++	   mOuterBorder.setOnTouchListener(new TouchListener(new ResizeWindow() {
++                @Override
++                public Rect resize(Rect frame, int diffX, int diffY,int pos) {
++		  switch(pos){
++		  	case 1:
++		                    mTmpFrame.top = frame.top+diffY;
++				mTmpFrame.bottom = frame.bottom;
++				mTmpFrame.left = frame.left;
++				mTmpFrame.right = frame.right;
++				 break;
++			case 2:
++		                    mTmpFrame.top = frame.top;
++				mTmpFrame.bottom = frame.bottom+diffY;
++				mTmpFrame.left = frame.left;
++				mTmpFrame.right = frame.right;
++				break;
++			case 3:
++		                   mTmpFrame.top = frame.top;
++				mTmpFrame.bottom = frame.bottom;
++				mTmpFrame.left = frame.left+diffX;
++				mTmpFrame.right = frame.right;
++				break;
++			case 4:
++		                    mTmpFrame.top = frame.top;
++				mTmpFrame.bottom = frame.bottom;
++				mTmpFrame.left = frame.left;
++				mTmpFrame.right = frame.right+diffX;
++				break;
++			default:
++				break;
++  	          }
++                    return mTmpFrame;
++                }
++            }, mMaximizeBtn, mLeftResize, mFullScreen));
+ 
+             mHeader.setOnTouchListener(new TouchListener(new ResizeWindow() {
+                 @Override
+-                public Rect resize(Rect frame, int diffX, int diffY) {
++                public Rect resize(Rect frame, int diffX, int diffY,int rawX) {
+                     mTmpFrame.left = frame.left + diffX;
+                     mTmpFrame.top = frame.top + diffY;
+                     mTmpFrame.right = frame.right + diffX;
+@@ -3021,7 +3072,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
+ 
+             mLeftResize.setOnTouchListener(new TouchListener(new ResizeWindow() {
+                 @Override
+-                public Rect resize(Rect frame, int diffX, int diffY) {
++                public Rect resize(Rect frame, int diffX, int diffY,int rawX) {
+                     mTmpFrame.left = frame.left + diffX;
+                     mTmpFrame.top = frame.top;
+                     mTmpFrame.right = frame.right;
+@@ -3032,7 +3083,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
+ 
+             mRightResize.setOnTouchListener(new TouchListener(new ResizeWindow() {
+                 @Override
+-                public Rect resize(Rect frame, int diffX, int diffY) {
++                public Rect resize(Rect frame, int diffX, int diffY,int rawX) {
+                     mTmpFrame.left = frame.left;
+                     mTmpFrame.top = frame.top;
+                     mTmpFrame.right = frame.right + diffX;
+@@ -3401,7 +3452,8 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
+          */
+         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+-        lp.setMargins(of, of, of, of);
++       // lp.setMargins(of, of, of, of); //by ladehunter
++       lp.setMargins(5,of,5,5);
+         decor.addView(in, lp);
+ 
+         ViewGroup contentParent = (ViewGroup)findViewById(ID_ANDROID_CONTENT);
+-- 
+1.9.1
+
