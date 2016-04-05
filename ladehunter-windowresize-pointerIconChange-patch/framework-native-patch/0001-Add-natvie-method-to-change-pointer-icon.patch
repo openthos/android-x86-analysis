@@ -1,0 +1,531 @@
+From f03affa31624f512100c633bd048242b77573448 Mon Sep 17 00:00:00 2001
+From: ladehunter <ladehunter@gmail.com>
+Date: Fri, 1 Apr 2016 11:04:54 +0000
+Subject: [PATCH] Add natvie method to change pointer icon
+
+---
+ .../java/android/hardware/input/IInputManager.aidl |   3 +
+ core/java/android/hardware/input/InputManager.java |  11 ++
+ core/java/android/view/PointerIcon.java            |  20 +++
+ core/jni/android_view_PointerIcon.h                |   4 +
+ core/res/res/values/attrs.xml                      |   2 +-
+ libs/input/PointerController.cpp                   |  52 +++++++-
+ libs/input/PointerController.h                     |   6 +
+ .../android/internal/policy/impl/PhoneWindow.java  | 147 ++++++++++++++++++++-
+ .../android/server/input/InputManagerService.java  |   9 +-
+ ...om_android_server_input_InputManagerService.cpp |  23 +++-
+ 10 files changed, 265 insertions(+), 12 deletions(-)
+
+diff --git a/core/java/android/hardware/input/IInputManager.aidl b/core/java/android/hardware/input/IInputManager.aidl
+index 465d142..46bb7f6 100644
+--- a/core/java/android/hardware/input/IInputManager.aidl
++++ b/core/java/android/hardware/input/IInputManager.aidl
+@@ -60,6 +60,9 @@ interface IInputManager {
+     // Registers an input devices changed listener.
+     void registerInputDevicesChangedListener(IInputDevicesChangedListener listener);
+ 
++    // Change PointerIcon
++    void setPointerIcon(int type);
++
+     // Input device vibrator control.
+     void vibrate(int deviceId, in long[] pattern, int repeat, IBinder token);
+     void cancelVibrate(int deviceId, IBinder token);
+diff --git a/core/java/android/hardware/input/InputManager.java b/core/java/android/hardware/input/InputManager.java
+index e5995b0..5706f3d 100644
+--- a/core/java/android/hardware/input/InputManager.java
++++ b/core/java/android/hardware/input/InputManager.java
+@@ -224,6 +224,17 @@ public final class InputManager {
+     }
+ 
+     /**
++     * Send a System PointerIcon type to change the mouse arrow. 
++     */
++    public void setPointerIcon(int type){
++        //Log.e(TAG,"setPointerIcon in InputManager is being caller",null);
++	try {
++            mIm.setPointerIcon(type);
++        } catch (RemoteException ex) {
++            Log.w(TAG, "Could not set pintericon.", ex);
++        }
++    }
++    /**
+      * Gets information about the input device with the specified descriptor.
+      * @param descriptor The input device descriptor.
+      * @return The input device or null if not found.
+diff --git a/core/java/android/view/PointerIcon.java b/core/java/android/view/PointerIcon.java
+index 7dcad68..85202a7 100644
+--- a/core/java/android/view/PointerIcon.java
++++ b/core/java/android/view/PointerIcon.java
+@@ -50,6 +50,18 @@ public final class PointerIcon implements Parcelable {
+     /** Style constant: Arrow icon.  (Default mouse pointer) */
+     public static final int STYLE_ARROW = 1000;
+ 
++    /** Style constant: UpDown side resize Arrow icon.   */
++    public static final int STYLE_ARROW_UPDOWN = 1100;
++
++    /** Style constant: LeftRight side resiez Arrow icon. */
++    public static final int STYLE_ARROW_LEFTRIGHT = 1101;
++
++    /** Style constant: 1st and 4th corner resize Arrow icon.*/
++    public static final int STYLE_ARROW_ONEFOUR = 1102;
++
++    /** Style constant: 2nd and 3rd corner resize Arrow icon. */
++    public static final int STYLE_ARROW_TWOTHREE = 1103;
++
+     /** {@hide} Style constant: Spot hover icon for touchpads. */
+     public static final int STYLE_SPOT_HOVER = 2000;
+ 
+@@ -427,6 +439,14 @@ public final class PointerIcon implements Parcelable {
+         switch (style) {
+             case STYLE_ARROW:
+                 return com.android.internal.R.styleable.Pointer_pointerIconArrow;
++            case STYLE_ARROW_UPDOWN:
++                return com.android.internal.R.styleable.Pointer_pointerIconArrowUpDown;
++            case STYLE_ARROW_LEFTRIGHT:
++                return com.android.internal.R.styleable.Pointer_pointerIconArrowLeftRight;
++            case STYLE_ARROW_ONEFOUR:
++                return com.android.internal.R.styleable.Pointer_pointerIconArrowOneFour;
++            case STYLE_ARROW_TWOTHREE:
++                return com.android.internal.R.styleable.Pointer_pointerIconArrowTwoThree;
+             case STYLE_SPOT_HOVER:
+                 return com.android.internal.R.styleable.Pointer_pointerIconSpotHover;
+             case STYLE_SPOT_TOUCH:
+diff --git a/core/jni/android_view_PointerIcon.h b/core/jni/android_view_PointerIcon.h
+index 3bfd645..99d8bf3 100644
+--- a/core/jni/android_view_PointerIcon.h
++++ b/core/jni/android_view_PointerIcon.h
+@@ -31,6 +31,10 @@ enum {
+     POINTER_ICON_STYLE_CUSTOM = -1,
+     POINTER_ICON_STYLE_NULL = 0,
+     POINTER_ICON_STYLE_ARROW = 1000,
++    POINTER_ICON_STYLE_ARROW_UPDOWN = 1100,
++    POINTER_ICON_STYLE_ARROW_LEFTRIGHT = 1101,
++    POINTER_ICON_STYLE_ARROW_ONEFOUR = 1102,
++    POINTER_ICON_STYLE_ARROW_TWOTHREE = 1103,
+     POINTER_ICON_STYLE_SPOT_HOVER = 2000,
+     POINTER_ICON_STYLE_SPOT_TOUCH = 2001,
+     POINTER_ICON_STYLE_SPOT_ANCHOR = 2002,
+diff --git a/core/res/res/values/attrs.xml b/core/res/res/values/attrs.xml
+index 4f503ad..b51c209 100644
+--- a/core/res/res/values/attrs.xml
++++ b/core/res/res/values/attrs.xml
+@@ -7268,7 +7268,7 @@
+         <attr name="pointerIconArrowUpDown" format="reference" />
+         <attr name="pointerIconArrowLeftRight" format="reference" />
+         <attr name="pointerIconArrowOneFour" format="reference" />
+-        <attr name="pointerIconArrowTowThree" format="reference" />
++        <attr name="pointerIconArrowTwoThree" format="reference" />
+         <!-- Reference to a pointer icon drawable with STYLE_SPOT_HOVER -->
+         <attr name="pointerIconSpotHover" format="reference" />
+         <!-- Reference to a pointer icon drawable with STYLE_SPOT_TOUCH -->
+diff --git a/libs/input/PointerController.cpp b/libs/input/PointerController.cpp
+index 790fcb9..29c68a7 100644
+--- a/libs/input/PointerController.cpp
++++ b/libs/input/PointerController.cpp
+@@ -49,7 +49,8 @@ static const nsecs_t SPOT_FADE_DURATION = 200 * 1000000LL; // 200 ms
+ // Time to spend fading out the pointer completely.
+ static const nsecs_t POINTER_FADE_DURATION = 500 * 1000000LL; // 500 ms
+ 
+-
++//Type of the Icon to change
++static int ICON_CHANGE_TYPE = 0;
+ // --- PointerController ---
+ 
+ PointerController::PointerController(const sp<PointerControllerPolicyInterface>& policy,
+@@ -418,6 +419,16 @@ void PointerController::setPointerIcon(const SpriteIcon& icon) {
+     updatePointerLocked();
+ }
+ 
++void PointerController::pointerIconChange(int type){ 
++        AutoMutex _l(mLock);
++
++        mLocked.pointerIconChanged = true;
++        ICON_CHANGE_TYPE = type;
++ 	//ALOGD("pointerIconChange is being calling %d",type);
++
++        updatePointerLocked();
++}
++
+ void PointerController::handleMessage(const Message& message) {
+     switch (message.what) {
+     case MSG_ANIMATE:
+@@ -513,17 +524,48 @@ void PointerController::updatePointerLocked() {
+     mLocked.pointerSprite->setLayerStack(mLocked.displayId);
+     mLocked.pointerSprite->setLayer(Sprite::BASE_LAYER_POINTER);
+     mLocked.pointerSprite->setPosition(mLocked.pointerX, mLocked.pointerY);
+-
+     if (mLocked.pointerAlpha > 0) {
+         mLocked.pointerSprite->setAlpha(mLocked.pointerAlpha);
+         mLocked.pointerSprite->setVisible(true);
+     } else {
+         mLocked.pointerSprite->setVisible(false);
+     }
+-
++    //if(mLocked.pointerIconChanged)
++	//ALOGD("pointerIconChanged is true!,type = %d",ICON_CHANGE_TYPE);
+     if (mLocked.pointerIconChanged || mLocked.presentationChanged) {
+-        mLocked.pointerSprite->setIcon(mLocked.presentation == PRESENTATION_POINTER
+-                ? mLocked.pointerIcon : mResources.spotAnchor);
++        //Changing the PointerIcon according to ICON_CHANGE_TYPE.
++	//ALOGD("+++++++++++++icon set is %d",ICON_CHANGE_TYPE);
++	switch(ICON_CHANGE_TYPE){
++                case 0:
++                        mLocked.pointerSprite->setIcon(mResources.arrowNormal);
++                        break;
++                case 1:
++                        mLocked.pointerSprite->setIcon(mResources.arrowUpdown);
++                        break;
++                case 2:
++                        mLocked.pointerSprite->setIcon(mResources.arrowUpdown);
++                        break;
++                case 3:
++                        mLocked.pointerSprite->setIcon(mResources.arrowLeftright);
++                        break;
++                case 4:
++                        mLocked.pointerSprite->setIcon(mResources.arrowLeftright);
++                        break;
++                case 5:
++                        mLocked.pointerSprite->setIcon(mResources.arrowOnefour);
++                        break;
++                case 6:
++                        mLocked.pointerSprite->setIcon(mResources.arrowTwothree);
++                        break;
++                case 7:
++                        mLocked.pointerSprite->setIcon(mResources.arrowTwothree);
++                        break;
++                case 8:
++                        mLocked.pointerSprite->setIcon(mResources.arrowOnefour);
++			break;
++                default:
++                        mLocked.pointerSprite->setIcon(mLocked.presentation == PRESENTATION_POINTER? mLocked.pointerIcon : mResources.spotHover);
++        }
+         mLocked.pointerIconChanged = false;
+         mLocked.presentationChanged = false;
+     }
+diff --git a/libs/input/PointerController.h b/libs/input/PointerController.h
+index c669891..845d10f 100644
+--- a/libs/input/PointerController.h
++++ b/libs/input/PointerController.h
+@@ -38,6 +38,11 @@ struct PointerResources {
+     SpriteIcon spotHover;
+     SpriteIcon spotTouch;
+     SpriteIcon spotAnchor;
++    SpriteIcon arrowNormal;
++    SpriteIcon arrowUpdown;
++    SpriteIcon arrowLeftright;
++    SpriteIcon arrowOnefour;
++    SpriteIcon arrowTwothree;
+ };
+ 
+ 
+@@ -85,6 +90,7 @@ public:
+     virtual int32_t getButtonState() const;
+     virtual void setPosition(float x, float y);
+     virtual void getPosition(float* outX, float* outY) const;
++    virtual void pointerIconChange(int type);
+     virtual void fade(Transition transition);
+     virtual void unfade(Transition transition);
+ 
+diff --git a/policy/src/com/android/internal/policy/impl/PhoneWindow.java b/policy/src/com/android/internal/policy/impl/PhoneWindow.java
+index 51494bd..a076b7f 100644
+--- a/policy/src/com/android/internal/policy/impl/PhoneWindow.java
++++ b/policy/src/com/android/internal/policy/impl/PhoneWindow.java
+@@ -53,6 +53,7 @@ import android.graphics.PixelFormat;
+ import android.graphics.Rect;
+ import android.graphics.drawable.ColorDrawable;
+ import android.graphics.drawable.Drawable;
++import android.hardware.input.InputManager;
+ import android.media.AudioManager;
+ import android.media.session.MediaController;
+ import android.media.session.MediaSessionLegacyHelper;
+@@ -91,6 +92,7 @@ import android.view.MotionEvent;
+ import android.view.SurfaceHolder;
+ import android.view.View;
+ import android.view.View.OnTouchListener;
++import android.view.View.OnHoverListener;
+ import android.view.ViewConfiguration;
+ import android.view.ViewGroup;
+ import android.view.ViewManager;
+@@ -145,6 +147,10 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
+     public final static int MW_WINDOW_RESIZE_BOTTOM = 2;
+     public final static int MW_WINDOW_RESIZE_LEFT = 3;
+     public final static int MW_WINDOW_RESIZE_RIGHT = 4;
++    public final static int MW_WINDOW_RESIZE_TOPLEFT = 5;
++    public final static int MW_WINDOW_RESIZE_TOPRIGHT = 6;
++    public final static int MW_WINDOW_RESIZE_BOTTOMLEFT = 7;
++    public final static int MW_WINDOW_RESIZE_BOTTOMRIGHT = 8;
+ 
+     private static final int CUSTOM_TITLE_COMPATIBLE_FEATURES = DEFAULT_FEATURES |
+             (1 << FEATURE_CUSTOM_TITLE) |
+@@ -3370,9 +3376,66 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
+         }
+     }
+ 
++
+     /**
+      * Move to FocusedStackFrame
+      */
++    private class HoverListener implements OnHoverListener {
++        Rect mFrame =  new Rect();
++        private int mResizeWays = MW_WINDOW_RESIZE_NONE;
++	private void getResizeWays(int x, int y) {
++	   if (y - mFrame.top <= MW_WINDOW_CHECK_RESIZE_DIFF) {
++               if(x - mFrame.left <= MW_WINDOW_CHECK_RESIZE_DIFF){
++	           mResizeWays = MW_WINDOW_RESIZE_TOPLEFT;
++               }else if(mFrame.right - x <= MW_WINDOW_CHECK_RESIZE_DIFF){
++		   mResizeWays = MW_WINDOW_RESIZE_TOPRIGHT;
++	       }else{
++	           mResizeWays = MW_WINDOW_RESIZE_TOP;
++	       }
++           } else if (mFrame.bottom - y <= MW_WINDOW_CHECK_RESIZE_DIFF) {
++               if(x - mFrame.left <= MW_WINDOW_CHECK_RESIZE_DIFF){
++	           mResizeWays = MW_WINDOW_RESIZE_BOTTOMLEFT;
++               }else if(mFrame.right - x <= MW_WINDOW_CHECK_RESIZE_DIFF){
++		   mResizeWays = MW_WINDOW_RESIZE_BOTTOMRIGHT;
++	       }else{
++	           mResizeWays = MW_WINDOW_RESIZE_BOTTOM;
++	       }
++           } else if (x - mFrame.left <= MW_WINDOW_CHECK_RESIZE_DIFF) {
++               mResizeWays = MW_WINDOW_RESIZE_LEFT;
++           } else if (mFrame.right - x <= MW_WINDOW_CHECK_RESIZE_DIFF) {
++               mResizeWays = MW_WINDOW_RESIZE_RIGHT;
++           } else {
++               mResizeWays = MW_WINDOW_RESIZE_NONE;
++           }
++	}
++	
++	@Override
++	public boolean onHover(View v, MotionEvent event){
++        	int rawX = (int) event.getRawX();
++       		int rawY = (int) event.getRawY();
++		int what = event.getAction();
++		//int pos = getPos(rawX,rawY);
++                switch(what){
++                       case MotionEvent.ACTION_HOVER_ENTER:
++				//Log.e(TAG,"+++++++A hover event"+mResizeWays,null);
++				mFrame.set(mDecor.getViewRootImpl().mWinFrame);
++				getResizeWays(rawX, rawY);
++                                InputManager.getInstance().setPointerIcon(mResizeWays);
++                                break;
++                        case MotionEvent.ACTION_HOVER_MOVE:
++				//Log.e(TAG,"+++++++A hover event"+mResizeWays,null);
++				getResizeWays(rawX, rawY);
++                                InputManager.getInstance().setPointerIcon(mResizeWays);
++                                break;
++                        case MotionEvent.ACTION_HOVER_EXIT:
++				//Log.e(TAG,"+++++++A hover event"+mResizeWays,null);
++				//getResizeWays(rawX, rawY);
++                                InputManager.getInstance().setPointerIcon(MW_WINDOW_RESIZE_NONE);
++                                break;
++                }
++		return false;
++	}
++}
+     private class TouchListener implements OnTouchListener {
+ 
+         private boolean mRelayoutSuccess = false;
+@@ -3421,9 +3484,21 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
+ 
+         private void getResizeWays(int x, int y) {
+            if (y - mFrame.top <= MW_WINDOW_CHECK_RESIZE_DIFF) {
+-               mResizeWays = MW_WINDOW_RESIZE_TOP;
++               if(x - mFrame.left <= MW_WINDOW_CHECK_RESIZE_DIFF){
++	           mResizeWays = MW_WINDOW_RESIZE_TOPLEFT;
++               }else if(mFrame.right - x <= MW_WINDOW_CHECK_RESIZE_DIFF){
++		   mResizeWays = MW_WINDOW_RESIZE_TOPRIGHT;
++	       }else{
++	           mResizeWays = MW_WINDOW_RESIZE_TOP;
++	       }
+            } else if (mFrame.bottom - y <= MW_WINDOW_CHECK_RESIZE_DIFF) {
+-               mResizeWays = MW_WINDOW_RESIZE_BOTTOM;
++               if(x - mFrame.left <= MW_WINDOW_CHECK_RESIZE_DIFF){
++	           mResizeWays = MW_WINDOW_RESIZE_BOTTOMLEFT;
++               }else if(mFrame.right - x <= MW_WINDOW_CHECK_RESIZE_DIFF){
++		   mResizeWays = MW_WINDOW_RESIZE_BOTTOMRIGHT;
++	       }else{
++	           mResizeWays = MW_WINDOW_RESIZE_BOTTOM;
++	       }
+            } else if (x - mFrame.left <= MW_WINDOW_CHECK_RESIZE_DIFF) {
+                mResizeWays = MW_WINDOW_RESIZE_LEFT;
+            } else if (mFrame.right - x <= MW_WINDOW_CHECK_RESIZE_DIFF) {
+@@ -3454,6 +3529,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
+                 mFrame.set(mDecor.getViewRootImpl().mWinFrame);
+                 mNewFrame = mFrame;
+                 getResizeWays(rawX, rawY);
++		InputManager.getInstance().setPointerIcon(mResizeWays);
+                 //Log.i(TAG, String.format("For ACTION_DOWN: mFrame(%d, %d, %d, %d), mLastX: %d, mLastY: %d",
+                 //                         mFrame.top, mFrame.left, mFrame.bottom, mFrame.right, mLastX, mLastY));
+                 if (mParentBtn != null) {
+@@ -3567,7 +3643,8 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
+             mAppName.setText(pm.getApplicationLabel(ai));
+             mAppIcon.setImageDrawable(icon);
+ 
+-            mOuterBorder.setOnTouchListener(new TouchListener(new ResizeWindow() {
++            mOuterBorder.setOnHoverListener(new HoverListener());
++	    mOuterBorder.setOnTouchListener(new TouchListener(new ResizeWindow() {
+                 @Override
+                 public Rect resize(Rect frame, int diffX, int diffY, int ways) {
+                     switch(ways) {
+@@ -3615,6 +3692,70 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
+                                     mTmpFrame.right = frame.right + mLastDx;
+                                 }
+                                 break;
++                        case MW_WINDOW_RESIZE_TOPLEFT:	
++                                if (frame.bottom - (frame.top + diffY) >= PhoneWindow.MW_WINDOW_MIN_HEIGHT) {
++                                    mTmpFrame.top = frame.top + diffY;
++                                    mLastDy = diffY;
++                                } else {
++                                    mTmpFrame.top = frame.top + mLastDy;
++                                }
++                                mTmpFrame.bottom = frame.bottom;
++                                if (frame.right - (frame.left + diffX) >= PhoneWindow.MW_WINDOW_MIN_WIDTH) {
++                                    mTmpFrame.left = frame.left + diffX;
++                                    mLastDx = diffX;
++                                } else {
++                                    mTmpFrame.left = frame.left + mLastDx;
++                                }
++                                mTmpFrame.right = frame.right;
++				break;
++                        case MW_WINDOW_RESIZE_TOPRIGHT:
++                                if (frame.bottom - (frame.top + diffY) >= PhoneWindow.MW_WINDOW_MIN_HEIGHT) {
++                                    mTmpFrame.top = frame.top + diffY;
++                                    mLastDy = diffY;
++                                } else {
++                                    mTmpFrame.top = frame.top + mLastDy;
++                                }
++                                mTmpFrame.bottom = frame.bottom;
++                                mTmpFrame.left = frame.left;
++                                if (frame.right + diffX - frame.left >= PhoneWindow.MW_WINDOW_MIN_WIDTH) {
++                                    mTmpFrame.right = frame.right + diffX;
++                                    mLastDx = diffX;
++                                } else {
++                                    mTmpFrame.right = frame.right + mLastDx;
++                                }
++				break;
++                        case MW_WINDOW_RESIZE_BOTTOMLEFT:
++                                mTmpFrame.top = frame.top;
++                                if (frame.bottom + diffY - frame.top >= PhoneWindow.MW_WINDOW_MIN_HEIGHT) {
++                                    mTmpFrame.bottom = frame.bottom + diffY;
++                                    mLastDy = diffY;
++                                } else {
++                                    mTmpFrame.bottom = frame.bottom + mLastDy;
++                                }
++                                if (frame.right - (frame.left + diffX) >= PhoneWindow.MW_WINDOW_MIN_WIDTH) {
++                                    mTmpFrame.left = frame.left + diffX;
++                                    mLastDx = diffX;
++                                } else {
++                                    mTmpFrame.left = frame.left + mLastDx;
++                                }
++                                mTmpFrame.right = frame.right;
++                                break;
++                        case MW_WINDOW_RESIZE_BOTTOMRIGHT:
++                                mTmpFrame.top = frame.top;
++                                if (frame.bottom + diffY - frame.top >= PhoneWindow.MW_WINDOW_MIN_HEIGHT) {
++                                    mTmpFrame.bottom = frame.bottom + diffY;
++                                    mLastDy = diffY;
++                                } else {
++                                    mTmpFrame.bottom = frame.bottom + mLastDy;
++                                }
++                                mTmpFrame.left = frame.left;
++                                if (frame.right + diffX - frame.left >= PhoneWindow.MW_WINDOW_MIN_WIDTH) {
++                                    mTmpFrame.right = frame.right + diffX;
++                                    mLastDx = diffX;
++                                } else {
++                                    mTmpFrame.right = frame.right + mLastDx;
++                                }
++                                break;
+                         default:
+                                 mTmpFrame.top = frame.top;
+                                 mTmpFrame.bottom = frame.bottom;
+diff --git a/services/core/java/com/android/server/input/InputManagerService.java b/services/core/java/com/android/server/input/InputManagerService.java
+index f8400f1..f86dbd4 100644
+--- a/services/core/java/com/android/server/input/InputManagerService.java
++++ b/services/core/java/com/android/server/input/InputManagerService.java
+@@ -198,6 +198,7 @@ public class InputManagerService extends IInputManager.Stub
+     private static native void nativeReloadDeviceAliases(long ptr);
+     private static native String nativeDump(long ptr);
+     private static native void nativeMonitor(long ptr);
++    private static native void nativeSetPointerIcon(long ptr,int type);
+ 
+     // Input event injection constants defined in InputDispatcher.h.
+     private static final int INPUT_EVENT_INJECTION_SUCCEEDED = 0;
+@@ -1367,6 +1368,12 @@ public class InputManagerService extends IInputManager.Stub
+         }
+     }
+ 
++    // Binder call
++    public void setPointerIcon(int type){
++	//Log.e(TAG,"setPointerIcon is being calling",null);
++        nativeSetPointerIcon(mPtr, type);
++    }
++
+     @Override
+     public void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
+         if (mContext.checkCallingOrSelfPermission(Manifest.permission.DUMP)
+@@ -1572,7 +1579,7 @@ public class InputManagerService extends IInputManager.Stub
+     private int getDoubleTapTimeout() {
+         return ViewConfiguration.getDoubleTapTimeout();
+     }
+-
++    
+     // Native callback.
+     private int getLongPressTimeout() {
+         return ViewConfiguration.getLongPressTimeout();
+diff --git a/services/core/jni/com_android_server_input_InputManagerService.cpp b/services/core/jni/com_android_server_input_InputManagerService.cpp
+index 6cefa6c..73e5141 100644
+--- a/services/core/jni/com_android_server_input_InputManagerService.cpp
++++ b/services/core/jni/com_android_server_input_InputManagerService.cpp
+@@ -1007,6 +1007,16 @@ void NativeInputManager::loadPointerResources(PointerResources* outResources) {
+             &outResources->spotTouch);
+     loadSystemIconAsSprite(env, mContextObj, POINTER_ICON_STYLE_SPOT_ANCHOR,
+             &outResources->spotAnchor);
++    loadSystemIconAsSprite(env, mContextObj, POINTER_ICON_STYLE_ARROW,
++            &outResources->arrowNormal);
++    loadSystemIconAsSprite(env, mContextObj, POINTER_ICON_STYLE_ARROW_UPDOWN,
++            &outResources->arrowUpdown);
++    loadSystemIconAsSprite(env, mContextObj, POINTER_ICON_STYLE_ARROW_LEFTRIGHT,
++            &outResources->arrowLeftright);
++    loadSystemIconAsSprite(env, mContextObj, POINTER_ICON_STYLE_ARROW_ONEFOUR,
++            &outResources->arrowOnefour);
++    loadSystemIconAsSprite(env, mContextObj, POINTER_ICON_STYLE_ARROW_TWOTHREE,
++            &outResources->arrowTwothree);
+ }
+ 
+ 
+@@ -1020,8 +1030,7 @@ static jlong nativeInit(JNIEnv* env, jclass clazz,
+         return 0;
+     }
+ 
+-    NativeInputManager* im = new NativeInputManager(contextObj, serviceObj,
+-            messageQueue->getLooper());
++    NativeInputManager* im = new NativeInputManager(contextObj, serviceObj,messageQueue->getLooper());
+     im->incStrong(0);
+     return reinterpret_cast<jlong>(im);
+ }
+@@ -1347,6 +1356,14 @@ static void nativeMonitor(JNIEnv* env, jclass clazz, jlong ptr) {
+     im->getInputManager()->getDispatcher()->monitor();
+ }
+ 
++//SetPointerIcon By System Icon Type
++static void nativeSetPointerIcon(JNIEnv* env, jclass clazz, jlong ptr, int type){
++        //ALOGD("nativeSetPointerIcon is being calling");
++	NativeInputManager* im = reinterpret_cast<NativeInputManager*>(ptr);
++        sp<PointerControllerInterface> pc = im->obtainPointerController(0);
++        pc->pointerIconChange(type);
++} 
++
+ // ----------------------------------------------------------------------------
+ 
+ static JNINativeMethod gInputManagerMethods[] = {
+@@ -1405,6 +1422,8 @@ static JNINativeMethod gInputManagerMethods[] = {
+             (void*) nativeDump },
+     { "nativeMonitor", "(J)V",
+             (void*) nativeMonitor },
++    { "nativeSetPointerIcon" , "(JI)V",
++	    (void*) nativeSetPointerIcon },
+ };
+ 
+ #define FIND_CLASS(var, className) \
+-- 
+1.9.1
+

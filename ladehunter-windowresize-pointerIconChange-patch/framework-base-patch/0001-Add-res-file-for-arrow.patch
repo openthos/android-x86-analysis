@@ -1,0 +1,170 @@
+From ed5ac89796309db0ca304b3dbe4ce535a9ca094a Mon Sep 17 00:00:00 2001
+From: ladehunter <ladehunter@gmail.com>
+Date: Fri, 1 Apr 2016 07:58:19 +0000
+Subject: [PATCH 1/2] Add res file for arrow
+
+---
+ core/res/res/drawable/point_arrow_lean14.png      | Bin 0 -> 537 bytes
+ core/res/res/drawable/point_arrow_lean23.png      | Bin 0 -> 531 bytes
+ core/res/res/drawable/point_arrow_left_right.png  | Bin 0 -> 489 bytes
+ core/res/res/drawable/point_arrow_up_down.png     | Bin 0 -> 561 bytes
+ core/res/res/drawable/pointer_arrow_lean14.xml    |   3 +++
+ core/res/res/drawable/pointer_arrow_lean23.xml    |   3 +++
+ core/res/res/drawable/pointer_arrow_leftright.xml |   3 +++
+ core/res/res/drawable/pointer_arrow_updown.xml    |   3 +++
+ core/res/res/values/attrs.xml                     |   4 ++++
+ core/res/res/values/styles.xml                    |   4 ++++
+ 10 files changed, 20 insertions(+)
+ create mode 100644 core/res/res/drawable/point_arrow_lean14.png
+ create mode 100644 core/res/res/drawable/point_arrow_lean23.png
+ create mode 100644 core/res/res/drawable/point_arrow_left_right.png
+ create mode 100644 core/res/res/drawable/point_arrow_up_down.png
+ create mode 100644 core/res/res/drawable/pointer_arrow_lean14.xml
+ create mode 100644 core/res/res/drawable/pointer_arrow_lean23.xml
+ create mode 100644 core/res/res/drawable/pointer_arrow_leftright.xml
+ create mode 100644 core/res/res/drawable/pointer_arrow_updown.xml
+
+diff --git a/core/res/res/drawable/point_arrow_lean14.png b/core/res/res/drawable/point_arrow_lean14.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..d288c41ff088b12b3e47243fc89f3ad9e6ee4fd4
+GIT binary patch
+literal 537
+zcmeAS@N?(olHy`uVBq!ia0vp^G9b*s3?yAI>n{URdjotzT>t<74`c#K2mrEypsud&
+z_wU~j_OoZt=FXi9WJ^m+zkU05-@bhiaUjXh&u?sO{P^+XhYugh$;tis^XJZ;JC`n9
+z0;&lK2|0fJxSN|BP}%<d`{7zJ8E||5{{7q7*eD?(k&uvZ^XAQW@80$H_5w}D)B+dj
+zD&7V1h<!<rUoZp1wEq&!|Nl2LaxYUC{QtjInoaos|NQ^|Q`T);=(#l9ZGpOlfu0?U
+zkQ$$89n<vx|1CDOtF2;{GWYcLHnUPrHnjqI_>8BEV~EE2rI&8<H5mx725jASHOo~u
+zZ^z@NM@_$*9{jJLw&lo#3lCl2zxFgfd*|fSI)6Ls|4ED|MY;r%Tv9St@+bs*XovDB
+zOph>r)vMN^<TQCpk6GKqvRxCuDQwB8XUMQAwvh5)w(Hpbt?8eS28Fls<#$|-3U5ul
+zbL56^$>zID%65B~ynlPS+y9F43D51Ht}-ijWKKPr<+j@;=6&&VIsbV&jGPN{YQm;9
+zPG9}%ZqtXddYjt&^{g^gC*LaY9DZ<i0duj0xKlyff9tdSTQ`YKXFlKX6BJ&au6{1-
+HoD!M<fy3Gc
+
+literal 0
+HcmV?d00001
+
+diff --git a/core/res/res/drawable/point_arrow_lean23.png b/core/res/res/drawable/point_arrow_lean23.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..6eefd15a1db58a5202b1f62225a778ef71132d97
+GIT binary patch
+literal 531
+zcmeAS@N?(olHy`uVBq!ia0vp^G9b*s3?yAI>n{URdjotzT>t<74`c#K2mrEw|NdQ9
+zR|jMO!Q8oXpFMj9VFSs1`}Vzk`&L?78pwY9__49EF+V>)kp1V+A2~U>hYueD6<oS>
+z>CT-y`}gk$io3bF9Y20NBqRjL#tPt;{{8#6v9S@TMnXd3=FOW42?_7sy#pH9+uMs(
+zBSi4%*`KyRmVHT(UocSXwEv9F|Nk?qFXLvDZvFpXF#rF5;gtXX7j9d(z%6{Kr=6aG
+zg}Ry$i)bC+^#4r%H(0c<QZw`R^)#1aRkq5>?&bv=b<ESnF+}71+Dn<j2Mq++65KPK
+z0u~nDPxpSkZr88>_0!yDtXQLe?DyB1bMM}~>+<Nk%Kqo|GrW{1nzYPZ)95O|IN`}B
+zepitLP8(CEu^O$|loYm6RFQpySmfTs2932hjc!?ay)LQ#+j#AB=HZJKMt|pgOWka#
+zZxp?7bHNl{PR$8DPS=a4u6?w7tKc_=$sU5ovhS*F;@G%!ri-3H_3Yd`_XMl0nPg^f
+zmlwY$uaNT3kfZ7H&mz_d_x>30{MBsM;!K@W?Dls5-e<DyyTx^KXY@?~1(T<%pUXO@
+GgeCx|$kfsR
+
+literal 0
+HcmV?d00001
+
+diff --git a/core/res/res/drawable/point_arrow_left_right.png b/core/res/res/drawable/point_arrow_left_right.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..c787de474168f63c2656840f937e7923c5dd1030
+GIT binary patch
+literal 489
+zcmeAS@N?(olHy`uVBq!ia0vp^G9b*s3?yAI>n{URivoN?T>t<74`c#K2>AQ=?}P~x
+z{`~pV*x1O=&;Re=KZq=x{QdiPU0vPJpFcl+`jnra|M~N0pwyHpQ*Pe831k34PEO9{
+z%a?!s`UT-a$gHfa^XJc>IdcYC(96r~`0?X`fq}?^nCw57cfA3Mnw13k1v4<P<%@Rw
+zpYi|yM`nrt{~4SAH_rG!ox^zpr&7$;uf8lII&m9U+F7xQ1~2uI7uGgc<zf|*7M$!;
+zB@8s-fTxRNh{pM|7f%Z{DTp*YH1e6)qvQ2CXpvav)3r7K!%w>$KAEcbt2}+5Bpcu4
+zll#rzel_+o_Drz-B6y-WGQpOi(IIeQo0W@Hi0FlfPJyL6-msRg+xl?oLjIuZG8fx;
+zCgub-TVGbXe_ZJF9n&4#Wv4s5|8TPTNNG-=`+T;Af^*O1E<eG+{7U|3>y6f9C%=~E
+z?~a{3BTnL(|G_i<oA<o97x^Ue)&5?6#_9d(s?!2&<yFOAAMQ}RlW5%YIW_r##a;%Z
+Wiz1c@*SAQ3!pPIr&t;ucLK6V7sK}xK
+
+literal 0
+HcmV?d00001
+
+diff --git a/core/res/res/drawable/point_arrow_up_down.png b/core/res/res/drawable/point_arrow_up_down.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..48db5fe4fc151a3b35d9585991e33e2ded470886
+GIT binary patch
+literal 561
+zcmeAS@N?(olHy`uVBq!ia0vp^G9b*s3?yAI>n{URmjZl3T>t<74`c#KIQaSV=bt}+
+z^7Hc>8yo-r{rls`51@jgq9P#q`}c34EReBr<HjdXo&dExefo6b#EC!=k^tN;pn(+?
+z747ZqK*q9V%bq=Z*3i%ZF)A@J@#@v9mX?+fZbU@H<;#~#OG}N6jNo>~#l@XHdv^c+
+z{csT=<LAM{aX`wgB*-tAfkAyjov6l)|Np0}{{PR|-^gOJ;{S40W_DQ%Pje|&Aq{JF
+zL2d<MxoP~J|NmF%Et6xD@!#SssU5!czmJxHNYt7IcD70!o2z|5t~lZ8;uxZF{_3UU
+zLQM`l4G*^}XlU>1iggs(km$a#;qLc()kv9R2YJ=~pZ)UX`>D>MIE8_&^|Q5FaHbxg
+z@tz513k|yVG!#yIt|0Q$=9ql%f)I`~*Oj`LgiK5AN!=N=)-WR9Bw8f;ZQr51Rk6K`
+zuD#woTj(NhSDW7fYu~OkpO*SV2S3csw_rNdum1kSH4zT`+3Z<o#dG#O&C30qb#u0^
+z$i16y`LF$ZQRPta^vN9k>x)-AJzRP3-NM@YnwrlJfAH{O>9m=@^~C*s481+#*MCR-
+Q3ju|ir>mdKI;Vst0G;0GPyhe`
+
+literal 0
+HcmV?d00001
+
+diff --git a/core/res/res/drawable/pointer_arrow_lean14.xml b/core/res/res/drawable/pointer_arrow_lean14.xml
+new file mode 100644
+index 0000000..c41f5f1
+--- /dev/null
++++ b/core/res/res/drawable/pointer_arrow_lean14.xml
+@@ -0,0 +1,3 @@
++<?xml version="1.0" encoding="utf-8"?>
++<pointer-icon android:bitmap="@drawable/point_arrow_lean14" android:hotSpotX="14dp" android:hotSpotY="14dp"
++  xmlns:android="http://schemas.android.com/apk/res/android" />
+diff --git a/core/res/res/drawable/pointer_arrow_lean23.xml b/core/res/res/drawable/pointer_arrow_lean23.xml
+new file mode 100644
+index 0000000..e164a06
+--- /dev/null
++++ b/core/res/res/drawable/pointer_arrow_lean23.xml
+@@ -0,0 +1,3 @@
++<?xml version="1.0" encoding="utf-8"?>
++<pointer-icon android:bitmap="@drawable/point_arrow_lean23" android:hotSpotX="14dp" android:hotSpotY="14dp"
++  xmlns:android="http://schemas.android.com/apk/res/android" />
+diff --git a/core/res/res/drawable/pointer_arrow_leftright.xml b/core/res/res/drawable/pointer_arrow_leftright.xml
+new file mode 100644
+index 0000000..9ebb477
+--- /dev/null
++++ b/core/res/res/drawable/pointer_arrow_leftright.xml
+@@ -0,0 +1,3 @@
++<?xml version="1.0" encoding="utf-8"?>
++<pointer-icon android:bitmap="@drawable/point_arrow_left_right" android:hotSpotX="14dp" android:hotSpotY="14dp"
++  xmlns:android="http://schemas.android.com/apk/res/android" />
+diff --git a/core/res/res/drawable/pointer_arrow_updown.xml b/core/res/res/drawable/pointer_arrow_updown.xml
+new file mode 100644
+index 0000000..ad5b89c
+--- /dev/null
++++ b/core/res/res/drawable/pointer_arrow_updown.xml
+@@ -0,0 +1,3 @@
++<?xml version="1.0" encoding="utf-8"?>
++<pointer-icon android:bitmap="@drawable/point_arrow_up_down" android:hotSpotX="14dp" android:hotSpotY="14dp"
++  xmlns:android="http://schemas.android.com/apk/res/android" />
+diff --git a/core/res/res/values/attrs.xml b/core/res/res/values/attrs.xml
+index 2fd7d30..4f503ad 100644
+--- a/core/res/res/values/attrs.xml
++++ b/core/res/res/values/attrs.xml
+@@ -7265,6 +7265,10 @@
+     <declare-styleable name="Pointer">
+         <!-- Reference to a pointer icon drawable with STYLE_ARROW -->
+         <attr name="pointerIconArrow" format="reference" />
++        <attr name="pointerIconArrowUpDown" format="reference" />
++        <attr name="pointerIconArrowLeftRight" format="reference" />
++        <attr name="pointerIconArrowOneFour" format="reference" />
++        <attr name="pointerIconArrowTowThree" format="reference" />
+         <!-- Reference to a pointer icon drawable with STYLE_SPOT_HOVER -->
+         <attr name="pointerIconSpotHover" format="reference" />
+         <!-- Reference to a pointer icon drawable with STYLE_SPOT_TOUCH -->
+diff --git a/core/res/res/values/styles.xml b/core/res/res/values/styles.xml
+index c520a46..185f7d2 100644
+--- a/core/res/res/values/styles.xml
++++ b/core/res/res/values/styles.xml
+@@ -1317,6 +1317,10 @@ please see styles_device_defaults.xml.
+     <!-- Pointer styles -->
+     <style name="Pointer">
+         <item name="pointerIconArrow">@drawable/pointer_arrow_icon</item>
++        <item name="pointerIconArrowUpDown">@drawable/pointer_arrow_updown</item>
++        <item name="pointerIconArrowLeftRight">@drawable/pointer_arrow_leftright</item>
++        <item name="pointerIconArrowOneFour">@drawable/pointer_arrow_lean14</item>
++        <item name="pointerIconArrowTwoThree">@drawable/pointer_arrow_lean23</item>
+         <item name="pointerIconSpotHover">@drawable/pointer_spot_hover_icon</item>
+         <item name="pointerIconSpotTouch">@drawable/pointer_spot_touch_icon</item>
+         <item name="pointerIconSpotAnchor">@drawable/pointer_spot_anchor_icon</item>
+-- 
+1.9.1
+
