@@ -1,0 +1,27 @@
+From 488b45b583baa8854dbf6ce4fb2d272480404124 Mon Sep 17 00:00:00 2001
+From: ladehunter <ladehunter@gmail.com>
+Date: Thu, 21 Jul 2016 05:32:43 +0000
+Subject: [PATCH] framework: base: StatusBar: Change the applyTranslucentFlagLw
+ method so that statusbar cant be translucent anymore.
+
+Signed-off-by: ladehunter <ladehunter@gmail.com>
+---
+ policy/src/com/android/internal/policy/impl/BarController.java | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/policy/src/com/android/internal/policy/impl/BarController.java b/policy/src/com/android/internal/policy/impl/BarController.java
+index eb16cb9..926fdad 100644
+--- a/policy/src/com/android/internal/policy/impl/BarController.java
++++ b/policy/src/com/android/internal/policy/impl/BarController.java
+@@ -110,7 +110,7 @@ public class BarController {
+                     & WindowManager.LayoutParams.PRIVATE_FLAG_INHERIT_TRANSLUCENT_DECOR) == 0) {
+                 int fl = PolicyControl.getWindowFlags(win, null);
+                 if ((fl & mTranslucentWmFlag) != 0) {
+-                    vis |= mTranslucentFlag;
++                    //vis |= mTranslucentFlag;
+                 } else {
+                     vis &= ~mTranslucentFlag;
+                 }
+-- 
+1.9.1
+

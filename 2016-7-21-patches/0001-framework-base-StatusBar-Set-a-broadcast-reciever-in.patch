@@ -1,0 +1,100 @@
+From 4d4b36b4e957e4b194091ac58c36cc1f7afb390b Mon Sep 17 00:00:00 2001
+From: ladehunter <ladehunter@gmail.com>
+Date: Thu, 21 Jul 2016 05:28:21 +0000
+Subject: [PATCH] framework: base: StatusBar: Set a broadcast reciever in
+ PhoneWindowManager so that app can change the visibility of statusbar.
+
+Signed-off-by: ladehunter <ladehunter@gmail.com>
+---
+ .../emindsoft/setupwizard/FinishPagerActivity.java |  4 +++
+ .../emindsoft/setupwizard/SetupWizardActivity.java |  4 +++
+ .../internal/policy/impl/PhoneWindowManager.java   | 29 +++++++++++++++++++++-
+ 3 files changed, 36 insertions(+), 1 deletion(-)
+
+diff --git a/packages/EmindSetupWizard/src/com/emindsoft/setupwizard/FinishPagerActivity.java b/packages/EmindSetupWizard/src/com/emindsoft/setupwizard/FinishPagerActivity.java
+index 879c553..da9d069 100644
+--- a/packages/EmindSetupWizard/src/com/emindsoft/setupwizard/FinishPagerActivity.java
++++ b/packages/EmindSetupWizard/src/com/emindsoft/setupwizard/FinishPagerActivity.java
+@@ -30,6 +30,10 @@ public class FinishPagerActivity extends BaseActivity {
+             public void onClick(View v) {
+                 ((SetupWizardApplication) FinishPagerActivity.this.getApplication())
+                         .onSetupFinished(FinishPagerActivity.this);
++                //send broadcast to control status bar finish
++                Intent intent = new Intent();
++                intent.setAction("com.android.control.statusbar.finish");
++                FinishPagerActivity.this.sendBroadcast(intent);
+             }
+         });
+     }
+diff --git a/packages/EmindSetupWizard/src/com/emindsoft/setupwizard/SetupWizardActivity.java b/packages/EmindSetupWizard/src/com/emindsoft/setupwizard/SetupWizardActivity.java
+index b2830b9..8cf458d 100644
+--- a/packages/EmindSetupWizard/src/com/emindsoft/setupwizard/SetupWizardActivity.java
++++ b/packages/EmindSetupWizard/src/com/emindsoft/setupwizard/SetupWizardActivity.java
+@@ -53,6 +53,10 @@ public class SetupWizardActivity extends BaseActivity {
+                 return false;
+             }
+         });
++        //send broadcast to control status bar
++        Intent intent1 = new Intent();
++        intent1.setAction("com.android.control.statusbar.start");
++        SetupWizardActivity.this.sendBroadcast(intent1);
+         this.mTextViewLanguage = (TextView) findViewById(R.id.textview_language);
+         this.mLanguageContainer = (LinearLayout) findViewById(R.id.linearlayout_language);
+         this.mTextViewLanguage.setText(this.mCurrentLocale.getDisplayName(this.mCurrentLocale));
+diff --git a/policy/src/com/android/internal/policy/impl/PhoneWindowManager.java b/policy/src/com/android/internal/policy/impl/PhoneWindowManager.java
+index f67c223..bee7b70 100644
+--- a/policy/src/com/android/internal/policy/impl/PhoneWindowManager.java
++++ b/policy/src/com/android/internal/policy/impl/PhoneWindowManager.java
+@@ -212,6 +212,29 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+     private boolean mKeyguardHidden;
+     private boolean mKeyguardDrawnOnce;
+ 
++    /**
++     * Broadcast for app to set visibility of statusbar
++     */
++    private boolean mAppChangeStatusBar = false;
++    private IntentFilter mAppChangeStatusBarStartFilter
++                     = new IntentFilter("com.android.control.statusbar.start");
++    private IntentFilter mAppChangeStatusBarFinishFilter
++                     = new IntentFilter("com.android.control.statusbar.finish");
++    private BroadcastReceiver mAppChangeStatusBarStartReceiver = new BroadcastReceiver() {
++        public void onReceive(Context context, Intent intent) {
++            if ("com.android.control.statusbar.start".equals(intent.getAction())) {
++               mAppChangeStatusBar = true;
++            }
++        }
++    };
++    private BroadcastReceiver mAppChangeStatusBarFinishReceiver = new BroadcastReceiver() {
++        public void onReceive(Context context, Intent intent) {
++            if ("com.android.control.statusbar.finish".equals(intent.getAction())) {
++               mAppChangeStatusBar = false;
++            }
++        }
++    };
++
+     /* Table of Application Launch keys.  Maps from key codes to intent categories.
+      *
+      * These are special keys that are used to launch particular kinds of applications,
+@@ -1398,6 +1421,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+     public void init(Context context, IWindowManager windowManager,
+             WindowManagerFuncs windowManagerFuncs) {
+         mContext = context;
++        mContext.registerReceiver(this.mAppChangeStatusBarStartReceiver, 
++                                  this.mAppChangeStatusBarStartFilter);
++        mContext.registerReceiver(this.mAppChangeStatusBarFinishReceiver, 
++                                  this.mAppChangeStatusBarFinishFilter);
+         mWindowManager = windowManager;
+         mWindowManagerFuncs = windowManagerFuncs;
+         mWindowManagerInternal = LocalServices.getService(WindowManagerInternal.class);
+@@ -4416,7 +4443,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+         if (!mShowingDream) {
+             mDreamingLockscreen = mShowingLockscreen;
+         }
+-        if ((mLastSystemUiFlags & View.SYSTEM_UI_FLAG_FULLSCREEN) != 0) {
++        if ((mLastSystemUiFlags & View.SYSTEM_UI_FLAG_FULLSCREEN) != 0 && mAppChangeStatusBar) {
+             if (mStatusBarController.setBarShowingLw(false)) {
+                 changes |= FINISH_LAYOUT_REDO_LAYOUT;
+             }
+-- 
+1.9.1
+

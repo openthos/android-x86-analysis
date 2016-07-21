@@ -1,0 +1,46 @@
+From 08f31aa3add98bdf6bb343f7602af6d88c495295 Mon Sep 17 00:00:00 2001
+From: ladehunter <ladehunter@gmail.com>
+Date: Thu, 21 Jul 2016 05:35:17 +0000
+Subject: [PATCH] framework: base: PhoneWindow: Change flags when send new
+ frame to make sure linerect will never have animation.
+
+Signed-off-by: ladehunter <ladehunter@gmail.com>
+---
+ policy/src/com/android/internal/policy/impl/PhoneWindow.java | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/policy/src/com/android/internal/policy/impl/PhoneWindow.java b/policy/src/com/android/internal/policy/impl/PhoneWindow.java
+index e68597f..3e413d2 100644
+--- a/policy/src/com/android/internal/policy/impl/PhoneWindow.java
++++ b/policy/src/com/android/internal/policy/impl/PhoneWindow.java
+@@ -3569,13 +3569,15 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
+                         } else {
+                             if (mNewFrame == mLeftDockFrame || mNewFrame == mRightDockFrame) {
+                                 mNewFrame = NO_FRAME;
+-                                sendNewFrame(Intent.FLAG_ACTIVITY_SINGLE_FULLSCREEN);
++                                sendNewFrame(Intent.FLAG_ACTIVITY_SINGLE_FULLSCREEN
++                                             | Intent.FLAG_ACTIVITY_NO_ANIMATION);
+                             }
+                             mNewFrame = r;
+                         }
+                         if (mResizeWays != MW_WINDOW_RESIZE_NONE || mNewFrame == mLeftDockFrame
+                                 || mNewFrame == mRightDockFrame) {
+-                            sendNewFrame(Intent.FLAG_ACTIVITY_SINGLE_FULLSCREEN);
++                            sendNewFrame(Intent.FLAG_ACTIVITY_SINGLE_FULLSCREEN
++                                         | Intent.FLAG_ACTIVITY_NO_ANIMATION);
+                         } else {
+                             ActivityManagerNative.getDefault().relayoutWindow(getStackId(), mNewFrame);
+                         }
+@@ -3592,7 +3594,8 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
+                     try {
+                         ActivityManagerNative.getDefault().relayoutWindow(getStackId(), mNewFrame);
+                         mNewFrame = NO_FRAME;
+-                        sendNewFrame(Intent.FLAG_ACTIVITY_SINGLE_FULLSCREEN);
++                        sendNewFrame(Intent.FLAG_ACTIVITY_SINGLE_FULLSCREEN
++                                     | Intent.FLAG_ACTIVITY_NO_ANIMATION);
+                         ActivityManagerNative.getDefault().setFocusedStack(getStackId());
+                         mDecor.invalidate();
+                     } catch (RemoteException e) {
+-- 
+1.9.1
+
