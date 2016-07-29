@@ -1,0 +1,216 @@
+From c2c38e4ea31f37a32d09fbdce47d29c34fdfb768 Mon Sep 17 00:00:00 2001
+From: ladehunter <ladehunter@gmail.com>
+Date: Fri, 29 Jul 2016 04:51:34 +0000
+Subject: [PATCH] framework: base: StatusBar: Change method of hide status bar
+ to solve the problem that status bar invisible when chosing run system with
+ out reboot after installation.
+
+Signed-off-by: ladehunter <ladehunter@gmail.com>
+---
+ core/java/android/app/StatusBarManager.java                  | 12 ++++++++++++
+ core/java/com/android/internal/statusbar/IStatusBar.aidl     |  1 +
+ .../com/android/internal/statusbar/IStatusBarService.aidl    |  1 +
+ .../src/com/android/systemui/statusbar/CommandQueue.java     | 12 ++++++++++++
+ .../systemui/statusbar/phone/NotificationPanelView.java      |  4 ++++
+ .../com/android/systemui/statusbar/phone/PhoneStatusBar.java |  7 +++++++
+ .../src/com/android/systemui/statusbar/tv/TvStatusBar.java   |  4 ++++
+ .../com/android/internal/policy/impl/PhoneWindowManager.java | 10 ++++++++--
+ .../android/server/statusbar/StatusBarManagerService.java    | 11 +++++++++++
+ 9 files changed, 60 insertions(+), 2 deletions(-)
+
+diff --git a/core/java/android/app/StatusBarManager.java b/core/java/android/app/StatusBarManager.java
+index 1f3aa5e..b6a2c39 100644
+--- a/core/java/android/app/StatusBarManager.java
++++ b/core/java/android/app/StatusBarManager.java
+@@ -116,6 +116,18 @@ public class StatusBarManager {
+         }
+     }
+     
++    public void hideStatusBar() {
++        try {
++            final IStatusBarService svc = getService();
++            if (svc != null) {
++                svc.hideStatusBar();
++            }
++        } catch (RemoteException ex) {
++            // system process is dead anyway.
++            throw new RuntimeException(ex);
++        }
++    }
++
+     /**
+      * Expand the notifications panel.
+      */
+diff --git a/core/java/com/android/internal/statusbar/IStatusBar.aidl b/core/java/com/android/internal/statusbar/IStatusBar.aidl
+index 4bab62f..9e45943 100644
+--- a/core/java/com/android/internal/statusbar/IStatusBar.aidl
++++ b/core/java/com/android/internal/statusbar/IStatusBar.aidl
+@@ -30,6 +30,7 @@ oneway interface IStatusBar
+     void animateExpandSettingsPanel();
+     void animateCollapsePanels();
+     void showStatusBarView();
++    void hideStatusBarView();
+     void setSystemUiVisibility(int vis, int mask);
+     void topAppWindowChanged(boolean menuVisible);
+     void setImeWindowStatus(in IBinder token, int vis, int backDisposition,
+diff --git a/core/java/com/android/internal/statusbar/IStatusBarService.aidl b/core/java/com/android/internal/statusbar/IStatusBarService.aidl
+index d0af693..c28cd71 100644
+--- a/core/java/com/android/internal/statusbar/IStatusBarService.aidl
++++ b/core/java/com/android/internal/statusbar/IStatusBarService.aidl
+@@ -26,6 +26,7 @@ interface IStatusBarService
+ {
+     void expandNotificationsPanel();
+     void showStatusBar();
++    void hideStatusBar();
+     void collapsePanels();
+     void disable(int what, IBinder token, String pkg);
+     void setIcon(String slot, String iconPackage, int iconId, int iconLevel, String contentDescription);
+diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/CommandQueue.java b/packages/SystemUI/src/com/android/systemui/statusbar/CommandQueue.java
+index 444d68f..ae25fc4 100644
+--- a/packages/SystemUI/src/com/android/systemui/statusbar/CommandQueue.java
++++ b/packages/SystemUI/src/com/android/systemui/statusbar/CommandQueue.java
+@@ -64,6 +64,7 @@ public class CommandQueue extends IStatusBar.Stub {
+     private static final int MSG_SHOW_VOLUME_PANEL          = 22 << MSG_SHIFT;
+     private static final int MSG_SHOW_WIFI_PANEL            = 23 << MSG_SHIFT;
+     private static final int MSG_SHOW_STATUSBAR_VIEW        = 24 << MSG_SHIFT;
++    private static final int MSG_HIDE_STATUSBAR_VIEW        = 25 << MSG_SHIFT;
+ 
+     public static final int FLAG_EXCLUDE_NONE = 0;
+     public static final int FLAG_EXCLUDE_SEARCH_PANEL = 1 << 0;
+@@ -89,6 +90,7 @@ public class CommandQueue extends IStatusBar.Stub {
+         public void disable(int state, boolean animate);
+         public void animateExpandNotificationsPanel();
+         public void showStatusBarView();
++        public void hideStatusBarView();
+         public void animateCollapsePanels(int flags);
+         public void animateExpandSettingsPanel();
+         public void setSystemUiVisibility(int vis, int mask);
+@@ -156,6 +158,13 @@ public class CommandQueue extends IStatusBar.Stub {
+         }
+     }
+ 
++    public void hideStatusBarView() {
++        synchronized (mList) {
++            mHandler.removeMessages(MSG_HIDE_STATUSBAR_VIEW);
++            mHandler.sendEmptyMessage(MSG_HIDE_STATUSBAR_VIEW);
++        }
++    }
++
+     public void animateCollapsePanels() {
+         synchronized (mList) {
+             mHandler.removeMessages(MSG_COLLAPSE_PANELS);
+@@ -367,6 +376,9 @@ public class CommandQueue extends IStatusBar.Stub {
+                 case MSG_SHOW_STATUSBAR_VIEW:
+                     mCallbacks.showStatusBarView();
+                     break;
++                case MSG_HIDE_STATUSBAR_VIEW:
++                    mCallbacks.hideStatusBarView();
++                    break;
+                 case MSG_CANCEL_PRELOAD_RECENT_APPS:
+                     mCallbacks.cancelPreloadRecentApps();
+                     break;
+diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/phone/NotificationPanelView.java b/packages/SystemUI/src/com/android/systemui/statusbar/phone/NotificationPanelView.java
+index 3a8bff3..d46a921 100644
+--- a/packages/SystemUI/src/com/android/systemui/statusbar/phone/NotificationPanelView.java
++++ b/packages/SystemUI/src/com/android/systemui/statusbar/phone/NotificationPanelView.java
+@@ -1538,6 +1538,10 @@ public class NotificationPanelView extends PanelView implements
+         mNotificationContainerParent.setVisibility(View.VISIBLE);
+     }
+ 
++    public void setPanelHide(){
++        mNotificationContainerParent.setVisibility(View.GONE);
++    }
++
+     @Override
+     public void instantExpand() {
+         super.instantExpand();
+diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/phone/PhoneStatusBar.java b/packages/SystemUI/src/com/android/systemui/statusbar/phone/PhoneStatusBar.java
+index e27cb0b..ba9e078 100644
+--- a/packages/SystemUI/src/com/android/systemui/statusbar/phone/PhoneStatusBar.java
++++ b/packages/SystemUI/src/com/android/systemui/statusbar/phone/PhoneStatusBar.java
+@@ -2392,11 +2392,18 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
+ 
+     @Override
+     public void showStatusBarView() {
++        mStatusBarWindow.setVisibility(View.VISIBLE);
+         mStatusBarView.setVisibility(View.VISIBLE);
+         mNotificationPanel.setPanelShow();
+     }
+ 
+     @Override
++    public void hideStatusBarView() {
++        mStatusBarWindow.setVisibility(View.GONE);
++        mNotificationPanel.setPanelHide();
++    }
++
++    @Override
+     public void animateExpandSettingsPanel() {
+         if (SPEW) Log.d(TAG, "animateExpand: mExpandedVisible=" + mExpandedVisible);
+         if (!panelsEnabled()) {
+diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/tv/TvStatusBar.java b/packages/SystemUI/src/com/android/systemui/statusbar/tv/TvStatusBar.java
+index 162a519..db66081 100644
+--- a/packages/SystemUI/src/com/android/systemui/statusbar/tv/TvStatusBar.java
++++ b/packages/SystemUI/src/com/android/systemui/statusbar/tv/TvStatusBar.java
+@@ -72,6 +72,10 @@ public class TvStatusBar extends BaseStatusBar {
+     }
+ 
+     @Override
++    public void hideStatusBarView() {
++    }
++
++    @Override
+     public void animateCollapsePanels(int flags) {
+     }
+ 
+diff --git a/policy/src/com/android/internal/policy/impl/PhoneWindowManager.java b/policy/src/com/android/internal/policy/impl/PhoneWindowManager.java
+index 40233a3..e985eb3 100644
+--- a/policy/src/com/android/internal/policy/impl/PhoneWindowManager.java
++++ b/policy/src/com/android/internal/policy/impl/PhoneWindowManager.java
+@@ -223,14 +223,20 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+     private BroadcastReceiver mAppChangeStatusBarStartReceiver = new BroadcastReceiver() {
+         public void onReceive(Context context, Intent intent) {
+             if ("com.android.control.statusbar.start".equals(intent.getAction())) {
+-               mAppChangeStatusBar = true;
++                try {
++                    mStatusBarService.hideStatusBar();
++                } catch(Exception e) {
++                }
+             }
+         }
+     };
+     private BroadcastReceiver mAppChangeStatusBarFinishReceiver = new BroadcastReceiver() {
+         public void onReceive(Context context, Intent intent) {
+             if ("com.android.control.statusbar.finish".equals(intent.getAction())) {
+-               mAppChangeStatusBar = false;
++                try {
++                    mStatusBarService.showStatusBar();
++                } catch(Exception e) {
++                }
+             }
+         }
+     };
+diff --git a/services/core/java/com/android/server/statusbar/StatusBarManagerService.java b/services/core/java/com/android/server/statusbar/StatusBarManagerService.java
+index 95ba3b9..b90f1c8 100644
+--- a/services/core/java/com/android/server/statusbar/StatusBarManagerService.java
++++ b/services/core/java/com/android/server/statusbar/StatusBarManagerService.java
+@@ -224,6 +224,17 @@ public class StatusBarManagerService extends IStatusBarService.Stub {
+     }
+ 
+     @Override
++    public void hideStatusBar() {
++
++        if (mBar != null) {
++            try {
++                mBar.hideStatusBarView();
++            } catch (RemoteException ex) {
++            }
++        }
++    }
++
++    @Override
+     public void expandSettingsPanel() {
+         enforceExpandStatusBar();
+ 
+-- 
+1.9.1
+
