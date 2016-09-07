@@ -1,0 +1,37 @@
+    public void unsetFocusedStack(int stackId){
+        synchronized (ActivityManagerService.this) {
+            ActivityStack stack = mStackSupervisor.getUpdateStack();
+            if (stack != null) {
+                ActivityRecord r = stack.topRunningActivityLocked(null);
+                if (r != null) {
+                    if (!mStackSupervisor.isHomeActivity(r)) {
+                        setFocusedActivityLocked(r, "setFocusedStack");
+                        moveTaskToFront(r.task.taskId, 0, null);
+                    }   
+                }   
+            }   
+        }   
+    } 
+	
+    ActivityStack getUpdateStack(){
+        int numDisplays = mActivityDisplays.size();
+        Rect bounds = new Rect();
+        DisplayMetrics metrics = mWindowManager.getDisplayMetrics();
+        for (int displayNdx = 0; displayNdx < numDisplays; ++displayNdx) {
+            ArrayList<ActivityStack> stacks = mActivityDisplays.valueAt(displayNdx).mStacks;
+            if ((stacks != null) && (stacks.size() > 0)) {
+                for (int stackNdx = stacks.size() - 1; stackNdx >= 0; --stackNdx) {
+                    ActivityStack stack = stacks.get(stackNdx);
+                    int stackId = stack.getStackId();
+                    if (stackId != HOME_STACK_ID) {
+                        mWindowManager.getStackBounds(stackId, bounds);
+                        if(bounds.left < metrics.widthPixels && bounds.top < metrics.heightPixels) {           
+                            return stack;
+                        }
+                    }   
+                }       
+            }       
+        }       
+            
+        return null;
+    }

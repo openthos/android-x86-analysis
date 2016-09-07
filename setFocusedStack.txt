@@ -1,0 +1,68 @@
+    public void setFocusedStack(int stackId) {
+        if (DEBUG_FOCUS) Slog.d(TAG, "setFocusedStack: stackId=" + stackId);
+        synchronized (ActivityManagerService.this) {
+            if (!mFocusJustChanged) {
+                ActivityStack stack = mStackSupervisor.getStack(stackId);
+                if (stack != null) {
+                    ActivityRecord r = stack.topRunningActivityLocked(null);
+                    if (r != null) {
+                        if (!mStackSupervisor.isHomeActivity(r)) {
+                            setFocusedActivityLocked(r, "setFocusedStack");
+                            moveTaskToFront(r.task.taskId, 0, null);
+                        }
+                    }
+                }
+            }
+        }
+    }
+   
+   void setFocusedStack(int stackId) {
+        if (stackId == HOME_STACK_ID) {
+            return;
+        }
+
+        int numDisplays = mActivityDisplays.size();
+        boolean findMenu = false;
+        boolean findStack = false;
+
+        for (int displayNdx = 0; displayNdx < numDisplays; ++displayNdx) {
+            ArrayList<ActivityStack> stacks = mActivityDisplays.valueAt(displayNdx).mStacks;
+            if ((stacks != null) && (stacks.size() > 0)) {
+                for (int stackNdx = stacks.size() - 1; stackNdx >= 0; --stackNdx) {
+                    ActivityStack stack = stacks.get(stackNdx);
+                    if ((stack.mStackId == stackId) && (findStack == false)) {
+                        stacks.remove(stack); 	//从队列中移除对应的Stack
+                        stacks.add(stack);		//从新将对应的Stack加入队列，以此来将其前置
+                        mLastFocusedStack = mFocusedStack;
+                        mFocusedStack = stack;
+                        mService.setFocusedStatusbarActivity(stack.mStackId);
+                        if (findMenu == true) {
+                            return;
+                        }
+                        findStack = true;
+                    } else if (stack.isStartupMenuStack() && (findMenu == false)) {
+                        stacks.remove(stack);
+                        mService.closeActivity(stack.mStackId);
+                        if (findStack == true) {
+                            return;
+                        }
+                        findMenu = true;
+                    }
+                }
+            }
+        }
+    }
+	
+	final void moveToFront(String reason) {
+        if (isAttached()) {
+            if (isOnHomeDisplay()) {
+                mStackSupervisor.moveHomeStack(isHomeStack(), reason);
+            }
+            mStacks.remove(this);
+            mStacks.add(this);
+            final TaskRecord task = topTask();
+            if (task != null) {
+                mWindowManager.moveTaskToTop(task.taskId);
+            }
+        }
+    }

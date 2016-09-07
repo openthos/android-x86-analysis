@@ -1,0 +1,31 @@
+    public boolean relayoutWindow(int stackId, Rect pos) {
+        synchronized (mWindowMap) {
+            final int numDisplays = mDisplayContents.size();
+            for (int displayNdx = 0; displayNdx < numDisplays; ++displayNdx) {
+                if (mDisplayContents.valueAt(displayNdx).relayoutStack(stackId, pos)) {
+                    performLayoutAndPlaceSurfacesLocked();
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+	
+    boolean relayoutStack(int stackId, Rect pos) {
+        for (int stackNdx = mStacks.size() - 1; stackNdx >= 0; --stackNdx) {
+            final TaskStack stack = mStacks.get(stackNdx);
+            if (stack.mStackId == stackId) {
+                stack.setCrappyRelayouted(true);
+                layoutNeeded = true; 
+                return stack.setBoundsByForce(pos);
+            }       
+        }           
+        return false;
+    }
+	
+    boolean setBoundsByForce(Rect bounds) {
+        mDimLayer.setBounds(bounds);
+        mAnimationBackgroundSurface.setBounds(bounds);
+        mBounds.set(bounds);
+        return true;
+    }
